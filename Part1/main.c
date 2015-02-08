@@ -10,20 +10,33 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "linked_list.h"
 
 int main ( int argc, char** argv ) 
 {
-	LinkedList ll;
-	int b = 128;
-	int M = b * 11;				// so we have space for 11 items
+	/*
+	int key = 16;
+	char tone = 'T';
+	char tone2 = 'B';
+	char* kaddr = &tone;
+	printf( "key: %u, ", key);
+	printf( "kaddr: %c, ", *kaddr );
+	*(int*)kaddr = key;
+	printf( "kaddr cast: %c", *(int*)kaddr );	// segmentation fault if *kaddr
+	*/
+
 	
-	char buf[1024];
-	memset( buf, 1, 1024 );		// set each byte to 1
+	int b = 128;				// size of each node (128 bytes)
+	int M = b * 11;				// total amount of memory (1408 bytes)
+	
+	char buf[1024];				// char array of 1024 bytes
+	memset( buf, 1, 1024 );		// take buf and fill each byte with 1 for 1024 bytes
 	
 	char* msg = "a sample message";
 	
-	Init( M, b );				// initialize
-
+	Init( M, b );				// initialize our list with 1408 bytes, block size of 128 bytes
+	PrintList();
+	/*
 	// test operations
 	int testnums[] = { 100, 5, 200, 7, 39, 25, 400, 50, 200, 300 };
 	int i = 0;
@@ -54,5 +67,5 @@ int main ( int argc, char** argv )
 		printf( "Key = %d, Value Len = %d, Value = %s\n", *(int *)kv, *(int *)(kv + 4), kv + 8 );
 
 	// end test operations	
-	Destroy ();	
+	Destroy ();	*/
 }
