@@ -3,7 +3,7 @@
 // Date			: 3 February 2015
 // Subject		: CSCE 312-501
 // Assignment	: Machine Problem 1
-// Updated		: 3 February 2015
+// Updated		: 8 February 2015
 // Description	: Memory Management through Linked Lists
 //********************************************************
 
@@ -17,18 +17,18 @@
 // Each node is a set size b
 // the number of nodes is M/b
 
-Node *headNP;
-Node *freeNP;		// there's a variable "free" in stdlio.h, so i had to change all the pointers to suffix NP. who knew?
 char* p;
 char* headptr;
-char* freeptr;
+char* freeptr;		// there's a variable "free" in stdlio.h, so i had to change all the pointers to suffix ptr. who knew?
 int basicBlockSize;
 int numNodes;
+int size;
 
 // definitively works now
 void Init ( int M, int b )	// M = amount of total memory bytes, b = basic block size/memory in each list node
 {
 	// variables to use
+	size = 0;
 	basicBlockSize = b;
 	numNodes = M/b;
 	char *msg = "Initial shit";
@@ -41,17 +41,19 @@ void Init ( int M, int b )	// M = amount of total memory bytes, b = basic block 
 
 	for ( int i = 0; i < numNodes; ++i )
 	{
-		*(int*)p = i;						// insert key at [0]
-		p += sizeof( int );					// move up by the size of an int
-		*(int*)p = vl;						// insert value length at [4]
-		p += sizeof( int );					// move up by the size of an int
-		memcpy( p, msg, vl );				// insert a value at [8]
-		p += b - 8;							// move to the next node
+		*(int*)p = i;					// insert key at [0]
+		p += sizeof( int );				// move up by the size of an int
+		*(int*)p = vl;					// insert value length at [4]
+		p += sizeof( int );				// move up by the size of an int
+		memcpy( p, msg, vl );			// insert a value at [8]
+		p += b - 8;						// move to the next node
 	}
 }
 
 void Destroy ()
-{}
+{
+	free( p );
+}
 
 int Insert ( int key, char* value_ptr, int value_len )	// use this to write Init
 {
@@ -73,9 +75,26 @@ int Insert ( int key, char* value_ptr, int value_len )	// use this to write Init
 		*valaddr = *value_ptr;
 	}
 	*/
+
+	if ( key > size )
+	{
+		// key
+		char* shift = headptr + ( basicBlockSize * key );
+		*(int*)shift = key;
+
+		// value length
+		shift += sizeof( int );
+		*(int*)shift = value_len;
+
+		//value
+		shift += sizeof( int );
+		memcpy( shift, value_ptr , value_len);
+	}
 }
 int Delete ( int key )
-{}
+{
+}
+
 char* Lookup ( int key )
 {
 	return NULL;

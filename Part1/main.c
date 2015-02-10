@@ -3,7 +3,7 @@
 // Date			: 3 February 2015
 // Subject		: CSCE 312-501
 // Assignment	: Machine Problem 1
-// Updated		: 3 February 2015
+// Updated		: 8 February 2015
 // Description	: Memory Management through Linked Lists
 //********************************************************
 
@@ -14,18 +14,6 @@
 
 int main ( int argc, char** argv ) 
 {
-	/*
-	int key = 16;
-	char tone = 'T';
-	char tone2 = 'B';
-	char* kaddr = &tone;
-	printf( "key: %u, ", key);
-	printf( "kaddr: %c, ", *kaddr );
-	*(int*)kaddr = key;
-	printf( "kaddr cast: %c", *(int*)kaddr );	// segmentation fault if *kaddr
-	*/
-
-	
 	int b = 128;				// size of each node (128 bytes)
 	int M = b * 11;				// total amount of memory (1408 bytes)
 	
