@@ -38,6 +38,7 @@ void Init ( int M, int b )	// M = amount of total memory bytes, b = basic block 
 	// memory
 	p = (char*)malloc( M );				// allocate M memory
 	headptr = p;						// set up the headptr
+	freeptr = headptr;
 
 	for ( int i = 0; i < numNodes; ++i )
 	{
@@ -75,11 +76,11 @@ int Insert ( int key, char* value_ptr, int value_len )	// use this to write Init
 		*valaddr = *value_ptr;
 	}
 	*/
-
-	if ( key > size )
+	int basicValueLength = basicBlockSize - 8;
+	if ( ( value_len < basicValueLength ) && ( size < numNodes ) )
 	{
 		// key
-		char* shift = headptr + ( basicBlockSize * key );
+		char *shift = freeptr;
 		*(int*)shift = key;
 
 		// value length
@@ -89,14 +90,43 @@ int Insert ( int key, char* value_ptr, int value_len )	// use this to write Init
 		//value
 		shift += sizeof( int );
 		memcpy( shift, value_ptr , value_len);
+
+		// increment list size and freeptr
+		++size;
+		freeptr += basicBlockSize;
 	}
 }
 int Delete ( int key )
 {
+	char *del = Lookup( key );
+	if ( del != NULL )
+	{
+		for ( int i = 0; i < basicBlockSize; ++i )
+		{
+			char *temp = del;
+			free( temp );
+			del += 1;
+		}
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
 }
 
 char* Lookup ( int key )
 {
+	char *shift = headptr;
+	for ( int i = 0; i < size; ++i )
+	{
+		if ( *shift == key )
+		{
+			return shift;
+		}
+		else
+			shift += basicBlockSize;
+	}
 	return NULL;
 }
 void PrintList ()

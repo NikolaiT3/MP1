@@ -24,7 +24,8 @@ int main ( int argc, char** argv )
 	
 	Init( M, b );				// initialize our list with 1408 bytes, block size of 128 bytes
 	PrintList();
-	/*
+	printf( "\n\n" );
+	
 	// test operations
 	int testnums[] = { 100, 5, 200, 7, 39, 25, 400, 50, 200, 300 };
 	int i = 0;
@@ -38,12 +39,12 @@ int main ( int argc, char** argv )
 	Insert( 150, buf, 200 ); 				// this Insert should fail
 	PrintList();
 	Delete( 7 );
-	Insert( 13, msg, strlen( msg ) + 1 );	// insertion of strings, copies the null byte at the end
-	Delete( 55 );
-	Insert( 15, "test msg", 8 );
-	Delete( 3 );
-	PrintList();
-	
+	//Insert( 13, msg, strlen( msg ) + 1 );	// insertion of strings, copies the null byte at the end
+	//Delete( 55 );
+	//Insert( 15, "test msg", 8 );
+	//Delete( 3 );
+	//PrintList();
+	/*
 	// a sample lookup operations that should return null, because it is looking up a non-existent number
 	char* kv = Lookup( 3 );
 	if ( kv )
