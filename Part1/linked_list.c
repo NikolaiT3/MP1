@@ -49,7 +49,7 @@ void Init ( int M, int b )	// M = amount of total memory bytes, b = basic block 
 	for ( int i = 0; i < numNodes; ++i )
 	{
 		temp = p + basicBlockSize;
-		*(char**)p = temp;				// insert pointer to next node
+		*(char**)p = NULL;				// insert pointer to next node
 		p += nxtptr;					// move up by the size of char*
 		*(int*)p = -1;					// insert key at [4 or 8]
 		p += intsize;					// move up by the size of an int
@@ -57,8 +57,8 @@ void Init ( int M, int b )	// M = amount of total memory bytes, b = basic block 
 		p += intsize;					// move up by the size of an int
 		memcpy( p, msg, vl );			// insert a value at [12 or 16]
 		p += b - nxtptr - 2 * intsize;	// move to the next node
-		printf( "Current: %x, Next: %x, Key = %d, Value Len = %d, Value: %s\n",
-			temp2, *(char**)temp2, *(int *)(temp2 + nxtptr), *(int *)(temp2 + nxtptr + 4), temp2 + nxtptr + 8 );
+		//printf( "Current: %x, Next: %x, Key = %d, Value Len = %d, Value: %s\n",
+		//	temp2, *(char**)temp2, *(int *)(temp2 + nxtptr), *(int *)(temp2 + nxtptr + 4), temp2 + nxtptr + 8 );
 		temp2 += b;
 	}
 	p = headptr;
@@ -72,43 +72,72 @@ void Destroy ()
 int Insert ( int key, char* value_ptr, int value_len )	// use this to write Init
 {
 	int basicValueLength = basicBlockSize - 8 - sizeof( char* );
-	printf( "bouta insert\n" );
 	if ( ( value_len < basicValueLength ) && ( size < numNodes ) )
 	{
-		// next ptr is already in existence at freeptr
-		char *shift = freeptr;
-		if ( ( size + 1 ) < numNodes )
-			freeptr = *(char**)shift;		// move freeptr to next node if list not full
-
-		//key
-		shift += nxtptr;
-		*(int*)shift = key;
-
-		// value length
-		shift += intsize;
-		*(int*)shift = value_len;
-
-		//value
-		shift += intsize;
-		memcpy( shift, value_ptr , value_len);
-
-		// increment list size
-		++size;
+		if ( size == 0 )
+		{
+			// insert at freeptr
+			freeptr += nxtptr;							// move up a pointer size
+			*(int*)freeptr = key;						// insert key
+			freeptr += intsize;							// move up an int
+			*(int*)freeptr = value_len;					// insert value length
+			freeptr += intsize;							// move up an int
+			memcpy( freeptr, value_ptr , value_len);	// insert message
+			++size;										// increase list size
+			return 1;
+		}
+		else if ( size != 0 )
+		{
+			freeptr -= basicBlockSize;					// move back a block
+			*(char**)freeptr = freeptr + basicBlockSize;// change it's next to point at this insert
+			freeptr += basicBlockSize + nxtptr;			// move up a block and an int
+			*(int*)freeptr = key;						// insert key
+			freeptr += intsize;							// move up an int
+			*(int*)freeptr = value_len;					// insert value length
+			freeptr += intsize;							// move up an int
+			memcpy( freeptr, value_ptr , value_len);	// insert value
+			++size;										// increase list size
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
 	}
 }
 
 int Delete ( int key )
 {
 	char *del = Lookup( key );
-	if ( del != NULL )
+	char* temp = headptr;
+	if ( del != headptr )
 	{
-		free( del );
+		del -= basicBlockSize;
+		*(char**)del = del + basicBlockSize;
+		for ( int i = 0; i < size; ++i )
+		{
+			if ( *(char**)temp != ( temp + basicBlockSize ) )
+			{
+				//point free at next block current + blocksize
+				freeptr = temp + basicBlockSize;
+			}
+			else
+			{
+				temp += basicBlockSize;
+			}
+		}
 		--numNodes;
-		return 0;
+		return 1;
+	}
+	else if ( del == headptr )
+	{
+		freeptr = headptr;
+		--numNodes;
+		return 1;
 	}
 	else
 	{
-		return 1;
+		return 0;
 	}
 }
 
