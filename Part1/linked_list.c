@@ -23,16 +23,19 @@ char* freeptr;		// there's a variable "free" in stdlio.h, so i had to change all
 int basicBlockSize;
 int numNodes;
 int size;
+int nxtptr;
+int intsize;
 
 // definitively works now
 void Init ( int M, int b )	// M = amount of total memory bytes, b = basic block size/memory in each list node
 {
-	// variables to use
+	intsize = sizeof( int );
+	nxtptr = sizeof( char* );
 	size = 0;
 	basicBlockSize = b;
 	numNodes = M/b;
 	char *msg = "Initial shit";
-	int vl = 13;		// intitial shit is 13 characters with the null termination "\n"
+	int vl = 13;		// intitial shit is 13 characters with the null terminator "\n"
 	char* temp;
 
 	// memory
@@ -42,13 +45,17 @@ void Init ( int M, int b )	// M = amount of total memory bytes, b = basic block 
 
 	for ( int i = 0; i < numNodes; ++i )
 	{
-		*(int*)p = i;					// insert key at [0]
-		p += sizeof( int );				// move up by the size of an int
-		*(int*)p = vl;					// insert value length at [4]
-		p += sizeof( int );				// move up by the size of an int
-		memcpy( p, msg, vl );			// insert a value at [8]
-		p += b - 8;						// move to the next node
+		temp = p + basicBlockSize;
+		*(char**)p = temp;				// insert pointer to next node
+		p += nxtptr;					// move up by the size of char*
+		*(int*)p = -1;					// insert key at [4 or 8]
+		p += intsize;					// move up by the size of an int
+		*(int*)p = vl;					// insert value length at [8 or 12]
+		p += intsize;					// move up by the size of an int
+		memcpy( p, msg, vl );			// insert a value at [12 or 16]
+		p += b - nxtptr - 2 * intsize;	// move to the next node
 	}
+	p = headptr;
 }
 
 void Destroy ()
@@ -58,55 +65,38 @@ void Destroy ()
 
 int Insert ( int key, char* value_ptr, int value_len )	// use this to write Init
 {
-	/*
-	// key
-	char* kaddr = freeNP + sizeof( char* );
-	*(int*)kaddr = key;
-
-	// value length
-	char* vladdr = kaddr + sizeof( int );
-	*(int*)vladdr = value_len;
-
-	// value pointer
-	char* valaddr = vladdr + sizeof( int );
-	for ( int i = 0; i < value_len; ++i )
-	{
-		valaddr += i;
-		value_len += i;
-		*valaddr = *value_ptr;
-	}
-	*/
-	int basicValueLength = basicBlockSize - 8;
+	int basicValueLength = basicBlockSize - 8 - sizeof( char* );
 	if ( ( value_len < basicValueLength ) && ( size < numNodes ) )
 	{
-		// key
+		// next ptr is already in existence at freeptr
 		char *shift = freeptr;
+		if ( ( size + 1 ) < numNodes )
+			freeptr = *(char**)shift;		// move freeptr up a node
+
+		//key
+		shift += nxtptr;
 		*(int*)shift = key;
 
 		// value length
-		shift += sizeof( int );
+		shift += intsize;
 		*(int*)shift = value_len;
 
 		//value
-		shift += sizeof( int );
+		shift += intsize;
 		memcpy( shift, value_ptr , value_len);
 
-		// increment list size and freeptr
+		// increment list size
 		++size;
-		freeptr += basicBlockSize;
 	}
 }
+
 int Delete ( int key )
 {
 	char *del = Lookup( key );
 	if ( del != NULL )
 	{
-		for ( int i = 0; i < basicBlockSize; ++i )
-		{
-			char *temp = del;
-			free( temp );
-			del += 1;
-		}
+		free( del );
+		--numNodes;
 		return 0;
 	}
 	else
@@ -117,7 +107,7 @@ int Delete ( int key )
 
 char* Lookup ( int key )
 {
-	char *shift = headptr;
+	char *shift = headptr + nxtptr;
 	for ( int i = 0; i < size; ++i )
 	{
 		if ( *shift == key )
@@ -129,13 +119,16 @@ char* Lookup ( int key )
 	}
 	return NULL;
 }
+
 void PrintList ()
 {
 	char* temp;
 	temp = headptr;
-	for ( int i = 0; i < numNodes; ++i )
+	for ( int i = 0; i < size; ++i )
 	{
-		printf( "Key = %d, Value Len = %d, Value: %s\n", *(int *)temp , *(int *)(temp + 4), temp + 8 );
-		temp += basicBlockSize;
+		printf( "Current: %x, Next: %x, Key = %d, Value Len = %d, Value: %s\n",
+			temp, *(char**)temp, *(int *)(temp + nxtptr), *(int *)(temp + nxtptr + 4), temp + nxtptr + 8 );
+		//temp += basicBlockSize;
+		temp = *(char**)temp;
 	}
 } 
