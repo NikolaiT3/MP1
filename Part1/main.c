@@ -36,6 +36,8 @@ int main ( int argc, char** argv )
 		Insert( testnums[ i ], buf, 50 );   // insert 50 bytes from the buffer as value for each of the insertions
 	}
 
+	printf( "First inserts Done\n" );
+
 	Insert( 150, buf, 200 ); 				// this Insert should fail
 	PrintList();
 	printf( "\n\n" );

@@ -25,6 +25,7 @@ int numNodes;
 int size;
 int nxtptr;
 int intsize;
+int pos;			// for use by delete
 
 // definitively works now
 void Init ( int M, int b )	// M = amount of total memory bytes, b = basic block size/memory in each list node
@@ -37,11 +38,13 @@ void Init ( int M, int b )	// M = amount of total memory bytes, b = basic block 
 	char *msg = "Initial shit";
 	int vl = 13;		// intitial shit is 13 characters with the null terminator "\n"
 	char* temp;
+	char* temp2;
 
 	// memory
 	p = (char*)malloc( M );				// allocate M memory
 	headptr = p;						// set up the headptr
 	freeptr = headptr;
+	temp2 = p;
 
 	for ( int i = 0; i < numNodes; ++i )
 	{
@@ -54,6 +57,9 @@ void Init ( int M, int b )	// M = amount of total memory bytes, b = basic block 
 		p += intsize;					// move up by the size of an int
 		memcpy( p, msg, vl );			// insert a value at [12 or 16]
 		p += b - nxtptr - 2 * intsize;	// move to the next node
+		printf( "Current: %x, Next: %x, Key = %d, Value Len = %d, Value: %s\n",
+			temp2, *(char**)temp2, *(int *)(temp2 + nxtptr), *(int *)(temp2 + nxtptr + 4), temp2 + nxtptr + 8 );
+		temp2 += b;
 	}
 	p = headptr;
 }
@@ -66,12 +72,13 @@ void Destroy ()
 int Insert ( int key, char* value_ptr, int value_len )	// use this to write Init
 {
 	int basicValueLength = basicBlockSize - 8 - sizeof( char* );
+	printf( "bouta insert\n" );
 	if ( ( value_len < basicValueLength ) && ( size < numNodes ) )
 	{
 		// next ptr is already in existence at freeptr
 		char *shift = freeptr;
 		if ( ( size + 1 ) < numNodes )
-			freeptr = *(char**)shift;		// move freeptr up a node
+			freeptr = *(char**)shift;		// move freeptr to next node if list not full
 
 		//key
 		shift += nxtptr;
@@ -107,15 +114,15 @@ int Delete ( int key )
 
 char* Lookup ( int key )
 {
-	char *shift = headptr + nxtptr;
+	char *shift = headptr;
 	for ( int i = 0; i < size; ++i )
 	{
-		if ( *shift == key )
+		if ( *(shift + nxtptr) == key )
 		{
-			return shift;
+			return shift + nxtptr;
 		}
 		else
-			shift += basicBlockSize;
+			shift = *(char**)shift;
 	}
 	return NULL;
 }
@@ -129,6 +136,7 @@ void PrintList ()
 		printf( "Current: %x, Next: %x, Key = %d, Value Len = %d, Value: %s\n",
 			temp, *(char**)temp, *(int *)(temp + nxtptr), *(int *)(temp + nxtptr + 4), temp + nxtptr + 8 );
 		//temp += basicBlockSize;
-		temp = *(char**)temp;
+		if ( ( i + 1 ) < size )
+			temp = *(char**)temp;
 	}
 } 
