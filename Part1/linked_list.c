@@ -64,6 +64,23 @@ void Init ( int M, int b )	// M = amount of total memory bytes, b = basic block 
 	p = headptr;
 }
 
+void freeReset()
+{
+	char* temp = headptr;
+	for ( int i = 0; i < size; ++i )
+	{
+		if ( *(char**)temp != ( temp + basicBlockSize ) )
+		{
+			//point free at next block current + blocksize
+			freeptr = temp + basicBlockSize;
+		}
+		else
+		{
+			temp += basicBlockSize;
+		}
+	}
+}
+
 void Destroy ()
 {
 	free( p );
@@ -83,6 +100,7 @@ int Insert ( int key, char* value_ptr, int value_len )	// use this to write Init
 			*(int*)freeptr = value_len;					// insert value length
 			freeptr += intsize;							// move up an int
 			memcpy( freeptr, value_ptr , value_len);	// insert message
+			freeReset();								// reset freeptr
 			++size;										// increase list size
 			return 1;
 		}
@@ -96,6 +114,7 @@ int Insert ( int key, char* value_ptr, int value_len )	// use this to write Init
 			*(int*)freeptr = value_len;					// insert value length
 			freeptr += intsize;							// move up an int
 			memcpy( freeptr, value_ptr , value_len);	// insert value
+			freeReset();								// reset freeptr
 			++size;										// increase list size
 			return 1;
 		}
@@ -114,18 +133,7 @@ int Delete ( int key )
 	{
 		del -= basicBlockSize;
 		*(char**)del = del + basicBlockSize;
-		for ( int i = 0; i < size; ++i )
-		{
-			if ( *(char**)temp != ( temp + basicBlockSize ) )
-			{
-				//point free at next block current + blocksize
-				freeptr = temp + basicBlockSize;
-			}
-			else
-			{
-				temp += basicBlockSize;
-			}
-		}
+		freeReset();
 		--numNodes;
 		return 1;
 	}

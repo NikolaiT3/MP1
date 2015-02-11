@@ -41,11 +41,11 @@ int main ( int argc, char** argv )
 	Insert( 150, buf, 200 ); 				// this Insert should fail
 	PrintList();
 	printf( "\n\n" );
-	//Delete( 7 );
+	Delete( 7 );
 	Insert( 13, msg, strlen( msg ) + 1 );	// insertion of strings, copies the null byte at the end
-	//Delete( 55 );
+	Delete( 55 );
 	Insert( 15, "test msg", 8 );
-	//Delete( 3 );
+	Delete( 3 );
 	PrintList();
 	printf( "\n\n" );
 
