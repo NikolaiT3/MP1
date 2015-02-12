@@ -25,7 +25,6 @@ int numNodes;
 int size;
 int nxtptr;
 int intsize;
-int pos;			// for use by delete
 
 // definitively works now
 void Init ( int M, int b )	// M = amount of total memory bytes, b = basic block size/memory in each list node
