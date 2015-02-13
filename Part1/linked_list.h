@@ -10,15 +10,6 @@
 #ifndef _linked_list_h_		// include file only once
 #define _linked_list_h_
 
-struct Node
-{
-	Node* next;
-	int key;
-	int valueLength;
-	int maxValueSize;
-	char* value;
-};
-
 void Init (int M, int b);	// initializes the linked list, should be called once from the main
 void Destroy ();			// destroys the linked list and cleans resources
 void freeReset();
