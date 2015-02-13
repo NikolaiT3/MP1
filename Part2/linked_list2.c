@@ -52,6 +52,7 @@ void Init(int memSize, int blockSize) {
 	p = headPtr;
 }
 
+// Moves the free pointer to an empty node at the lowest possible index
 void freeReset() {
 	char* temp = headPtr;
 	for (int i = 0; i < size; ++i) {
