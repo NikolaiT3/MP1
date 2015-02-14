@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string.h>
+#include "linked_list2.h"
 
 int main(int argc, char ** argv) 
 {

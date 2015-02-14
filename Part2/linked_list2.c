@@ -17,134 +17,189 @@
 // Each node is a set size blockSize
 // the number of nodes is memSize / blockSize
 
-char* p;
-char* headPtr;
-char* freePtr;
 int basicBlockSize;
 int numNodes;
-int size;
+int size[ 1024 ];
+int tiers;
+int tierGap;
+char *tierList[ 1024 ];
+char *freePtrs[ 1024 ];
 const int PTRSIZE = sizeof(char*);
 const int INTSIZE = sizeof(int);
 
-// memSize = amount of total memory bytes, blockSize = basic block size/memory in each list node
-void Init(int memSize, int blockSize) {
-	size = 0;
-	basicBlockSize = blockSize;
-	numNodes = memSize / blockSize;
-	char* msg = "Basic Message";
-	int msgLength = msg.size() + 1;					// Add one for the "\n" null terminator
-
-	// Memory
-	p = (char*)malloc(memSize);						// allocate memSize memory
-	headPtr = p;									// set up the headPtr
-	freePtr = headPtr;
-
-	for (int i = 0; i < numNodes; ++i) {
-		*(char**)p = NULL;							// insert pointer to next node
-		p += PTRSIZE;								// move up by the size of char*
-		*(int*)p = -1;								// insert key at [4 or 8]
-		p += INTSIZE;								// move up by the size of an int
-		*(int*)p = msgLength;						// insert value length at [8 or 12]
-		p += INTSIZE;								// move up by the size of an int
-		memcpy(p, msg, msgLength);					// insert a value at [12 or 16]
-		p += blockSize - PTRSIZE - 2 * INTSIZE;		// move to the next node
+// returns what index a key should be placed in
+int indexLookup( int key )
+{
+	int temp = tierGap;
+	for ( int i = 0; i < tierGap; ++i )
+	{
+		if ( key > tierGap && key < tierGap * 2 )
+		{
+			return i;
+		}
 	}
-	p = headPtr;
 }
 
-// Moves the free pointer to an empty node at the lowest possible index
-void freeReset() {
-	char* temp = headPtr;
-	for (int i = 0; i < size; ++i) {
-		if (*(char**)temp != (temp + basicBlockSize)) {
-			freePtr = temp + basicBlockSize;
+// Moves the free pointer to an empty node at the lowest possible index.
+// if in insert or delete, must be used AFTER incrementing or decrementing size
+void freeReset( int index )
+{
+	char* temp = tierList[ index ];
+	for ( int i = 0; i < size[ index ]; ++i )
+	{
+		if ( *(char**)temp != (temp + basicBlockSize) )
+		{
+			freePtrs[ index ] = temp + basicBlockSize;
 		}
-		else {
+		else
+		{
 			temp += basicBlockSize;
 		}
 	}
 }
 
-void Destroy() {
-	free(p);
+// initializes each index of the tiers array
+void indexInit( int memSize, int index )
+{
+	size[ index ] = 0;
+	char *msg = " ";
+	int msgLength = 2;
+	tierList[ index ] = (char*)malloc( memSize );
+	freePtrs[ index ] = tierList[ index ];
+
+	for ( int i = 0; i < numNodes; ++i )
+	{
+		*(char**)freePtrs[ index ] = NULL;							// insert pointer to next node
+		freePtrs[ index ] += PTRSIZE;								// move up by the size of char*
+		*(int*)freePtrs[ index ] = -1;								// insert key at [4 or 8]
+		freePtrs[ index ] += INTSIZE;								// move up by the size of an int
+		*(int*)freePtrs[ index ] = msgLength;						// insert value length at [8 or 12]
+		freePtrs[ index ] += INTSIZE;								// move up by the size of an int
+		memcpy( freePtrs[ index ], msg, msgLength );				// insert a value at [12 or 16]
+		freePtrs[ index ] += basicBlockSize - PTRSIZE - 2 * INTSIZE;// move to the next node
+	}
+	freePtrs[ index ] = tierList[ index ];
+}
+
+// memSize = amount of total memory bytes, blockSize = basic block size/memory in each list node
+void Init( int memSize, int blockSize, int tierSize )
+{
+	tiers = tierSize;
+	basicBlockSize = blockSize;
+	numNodes = memSize / blockSize;
+	tierGap = 2147483647 / tiers;					// 2^31 - 1 = 2147483647
+
+	for ( int i = 0; i < tiers; ++i )
+	{
+		indexInit( memSize, i );
+	}
+}
+
+void Destroy()
+{
+	for ( int i = 0; i < tiers; ++i )
+	{
+		free( tierList[ i ] );
+	}
 }
 
 // use this to write to Init
-int Insert(int key, char* valPtr, int valLength) {
+int Insert( int key, char *valPtr, int valLength )
+{
+	int index = indexLookup( key );
 	int basicValLength = basicBlockSize - 2 * INTSIZE - PTRSIZE;
-	if (size == 0) {
-		freePtr += PTRSIZE;								// move up a pointer size
-		*(int*)freePtr = key;							// insert key
-		freePtr += INTSIZE;								// move up an int
-		*(int*)freePtr = valLength;						// insert value length
-		freePtr += INTSIZE;								// move up an int
-		memcpy(freePtr, " ", *(int*)(freePtr - INTSIZE));// delete the old contents
-		memcpy(freePtr, valPtr, valLength);				// insert message
-		++size;											// increase list size
-		freeReset();									// reset freeptr
+	if ( size[ index ] == 0 )
+	{
+		freePtrs[ index ] += PTRSIZE;								// move up a pointer size
+		*(int*)freePtrs[ index ] = key;							// insert key
+		freePtrs[ index ] += INTSIZE;								// move up an int
+		*(int*)freePtrs[ index ] = valLength;						// insert value length
+		freePtrs[ index ] += INTSIZE;								// move up an int
+		memcpy(freePtrs[ index ], " ", *(int*)(freePtrs[ index ] - INTSIZE));// delete the old contents
+		memcpy(freePtrs[ index ], valPtr, valLength);				// insert message
+		++(size[ index ]);											// increase list size
+		freeReset( index );									// reset freeptr
 		return 1;
 	}
-	else if (size != 0) {
-		freePtr -= basicBlockSize;						// move back a block
-		*(char**)freePtr = freePtr + basicBlockSize;	// change it's next to point at this insert
-		freePtr += basicBlockSize + PTRSIZE;			// move up a block and an int
-		*(int*)freePtr = key;							// insert key
-		freePtr += INTSIZE;								// move up an int
-		*(int*)freePtr = valLength;						// insert value length
-		freePtr += INTSIZE;								// move up an int
-		memcpy(freePtr, " ", *(int*)(freePtr - INTSIZE));// delete the old contents
-		memcpy(freePtr, valPtr, valLength);				// insert value
-		++size;											// increase list size
-		freeReset();									// reset freeptr
+	else if ( size[ index ] != 0 )
+	{
+		freePtrs[ index ] -= basicBlockSize;						// move back a block
+		*(char**)freePtrs[ index ] = freePtrs[ index ] + basicBlockSize;	// change it's next to point at this insert
+		freePtrs[ index ] += basicBlockSize + PTRSIZE;			// move up a block and an int
+		*(int*)freePtrs[ index ] = key;							// insert key
+		freePtrs[ index ] += INTSIZE;								// move up an int
+		*(int*)freePtrs[ index ] = valLength;						// insert value length
+		freePtrs[ index ] += INTSIZE;								// move up an int
+		memcpy(freePtrs[ index ], " ", *(int*)(freePtrs[ index ] - INTSIZE));// delete the old contents
+		memcpy(freePtrs[ index ], valPtr, valLength);				// insert value
+		++(size[ index ]);											// increase list size
+		freeReset( index );									// reset freeptr
 		return 1;
 	}
-	else {
+	else
+	{
 		return 0;
 	}
 }
 
-int Delete(int key) { 
-	char* del = Lookup(key);
+int Delete( int key )
+{
+	int index = indexLookup( key );
+	char *del = Lookup( key, index );
 	del -= PTRSIZE;
-	if (del != NULL && del != headPtr && freePtr > del) {
+	if ( del != NULL && del != tierList[ index ] && freePtrs[ index ] > del )
+	{
 		del -= basicBlockSize;
 		*(char**)del = del + 2 * basicBlockSize;
-		--size;
-		freeReset();
+		--(size[ index ]);
+		freeReset( index );
 		return 1;
 	}
-	else if (del == headPtr) {
-		freePtr = headPtr;
-		--size;
+	else if ( del == tierList[ index ] )
+	{
+		freePtrs[ index ] = tierList[ index ];
+		--(size[ index ]);
 		return 1;
 	}
-	else {
+	else
+	{
 		return 0;
 	}
 }
 
-char* Lookup(int key) {
-	char* shift = headPtr;
-	for (int i = 0; i < size; ++i) {
-		if (*(shift + PTRSIZE) == key) {
+// returns a pointer to the KEY
+char* Lookup( int key, int index )
+{
+	char *shift = tierList[ index ];
+	for ( int i = 0; i < size[ index ]; ++i )
+	{
+		if ( *(shift + PTRSIZE) == key )
+		{
 			return shift + PTRSIZE;
 		}
-		else {
+		else
+		{
 			shift = *(char**)shift;
 		}
 	}
 	return NULL;
 }
 
-void PrintList() {
-	char* temp;
-	temp = headPtr;
-	for (int i = 0; i < size; ++i) {
-		printf("Current: %x, Next: %x, Key = %d, Value Length = %d, Value: %s\n",
-			temp, *(char**)temp, *(int*)(temp + PTRSIZE), *(int*)(temp + PTRSIZE + 4),
-			temp + PTRSIZE + 8);
-		if ((i + 1) != size) {
-			temp = *(char**)temp;
+void PrintList()
+{
+	char *temp;	
+	for ( int i = 0; i < tiers; ++i )
+	{
+		temp = tierList[ i ];
+		for ( int k = 0; k < size[ i ]; ++k )
+		{
+			printf("Current: %x, Next: %x, Key = %d, Value Length = %d, Value: %s\n",
+				temp, *(char**)temp, *(int*)(temp + PTRSIZE), *(int*)(temp + PTRSIZE + 4),
+				temp + PTRSIZE + 8);
+			if ( (i + 1) != size[ i ] )
+			{
+				temp = *(char**)temp;
+			}
 		}
 	}
 }
