@@ -1,9 +1,9 @@
 //********************************************************
 // Name			: Nicholas Warner and Jennings Fairchild
 // Date			: 3 February 2015
-// Subject		: CSCE 312-501
+// Subject		: CSCE 313-504
 // Assignment	: Machine Problem 1
-// Updated		: 3 February 2015
+// Updated		: 15 February 2015
 // Description	: Memory Management through Linked Lists
 //********************************************************
 

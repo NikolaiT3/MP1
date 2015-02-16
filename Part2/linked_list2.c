@@ -1,9 +1,9 @@
 //********************************************************
 // Name			: Nicholas Warner and Jennings Fairchild
 // Date			: 3 February 2015
-// Subject		: CSCE 312-501
+// Subject		: CSCE 313-504
 // Assignment	: Machine Problem 1
-// Updated		: 3 February 2015
+// Updated		: 15 February 2015
 // Description	: Memory Management through Linked Lists
 //********************************************************
 
@@ -31,12 +31,13 @@ const int INTSIZE = sizeof(int);
 int indexLookup( int key )
 {
 	int temp = tierGap;
-	for ( int i = 0; i < tierGap; ++i )
+	for ( int i = 0; i < tiers; ++i )
 	{
-		if ( key > tierGap && key < tierGap * 2 )
+		if ( key < temp )
 		{
 			return i;
 		}
+		temp += tierGap;
 	}
 }
 
@@ -70,10 +71,13 @@ void indexInit( int memSize, int index )
 	for ( int i = 0; i < numNodes; ++i )
 	{
 		*(char**)freePtrs[ index ] = NULL;							// insert pointer to next node
+
 		freePtrs[ index ] += PTRSIZE;								// move up by the size of char*
-		*(int*)freePtrs[ index ] = -1;								// insert key at [4 or 8]
+		*(int*)freePtrs[ index ] = 16;								// insert key at [4 or 8]
+
 		freePtrs[ index ] += INTSIZE;								// move up by the size of an int
 		*(int*)freePtrs[ index ] = msgLength;						// insert value length at [8 or 12]
+
 		freePtrs[ index ] += INTSIZE;								// move up by the size of an int
 		memcpy( freePtrs[ index ], msg, msgLength );				// insert a value at [12 or 16]
 		freePtrs[ index ] += basicBlockSize - PTRSIZE - 2 * INTSIZE;// move to the next node
@@ -110,34 +114,42 @@ int Insert( int key, char *valPtr, int valLength )
 	int basicValLength = basicBlockSize - 2 * INTSIZE - PTRSIZE;
 	if ( size[ index ] == 0 )
 	{
-		freePtrs[ index ] += PTRSIZE;								// move up a pointer size
-		*(int*)freePtrs[ index ] = key;							// insert key
-		freePtrs[ index ] += INTSIZE;								// move up an int
-		*(int*)freePtrs[ index ] = valLength;						// insert value length
-		freePtrs[ index ] += INTSIZE;								// move up an int
+		freePtrs[ index ] += PTRSIZE;										// move up a pointer size
+		*(int*)freePtrs[ index ] = key;										// insert key
+
+		freePtrs[ index ] += INTSIZE;										// move up an int
+		*(int*)freePtrs[ index ] = valLength;								// insert value length
+
+		freePtrs[ index ] += INTSIZE;										// move up an int
 		memcpy(freePtrs[ index ], " ", *(int*)(freePtrs[ index ] - INTSIZE));// delete the old contents
-		memcpy(freePtrs[ index ], valPtr, valLength);				// insert message
-		++(size[ index ]);											// increase list size
-		freeReset( index );									// reset freeptr
+		memcpy(freePtrs[ index ], valPtr, valLength);						// insert message
+
+		++(size[ index ]);													// increase list size
+		freeReset( index );													// reset freeptr
 		return 1;
 	}
-	else if ( size[ index ] != 0 )
+	else if ( size[ index ] > 0 && size[ index ] < numNodes )
 	{
-		freePtrs[ index ] -= basicBlockSize;						// move back a block
+		freePtrs[ index ] -= basicBlockSize;								// move back a block
 		*(char**)freePtrs[ index ] = freePtrs[ index ] + basicBlockSize;	// change it's next to point at this insert
-		freePtrs[ index ] += basicBlockSize + PTRSIZE;			// move up a block and an int
-		*(int*)freePtrs[ index ] = key;							// insert key
-		freePtrs[ index ] += INTSIZE;								// move up an int
-		*(int*)freePtrs[ index ] = valLength;						// insert value length
-		freePtrs[ index ] += INTSIZE;								// move up an int
+
+		freePtrs[ index ] += basicBlockSize + PTRSIZE;						// move up a block and an int
+		*(int*)freePtrs[ index ] = key;										// insert key
+
+		freePtrs[ index ] += INTSIZE;										// move up an int
+		*(int*)freePtrs[ index ] = valLength;								// insert value length
+
+		freePtrs[ index ] += INTSIZE;										// move up an int
 		memcpy(freePtrs[ index ], " ", *(int*)(freePtrs[ index ] - INTSIZE));// delete the old contents
-		memcpy(freePtrs[ index ], valPtr, valLength);				// insert value
-		++(size[ index ]);											// increase list size
-		freeReset( index );									// reset freeptr
+		memcpy(freePtrs[ index ], valPtr, valLength);						// insert value
+
+		++(size[ index ]);													// increase list size
+		freeReset( index );													// reset freeptr
 		return 1;
 	}
 	else
 	{
+		printf( "INSERT OVERFLOW ON TIER %u PREVENTED, KEY: %u\n", index, key );
 		return 0;
 	}
 }
@@ -191,12 +203,13 @@ void PrintList()
 	for ( int i = 0; i < tiers; ++i )
 	{
 		temp = tierList[ i ];
+		printf ( "tier: %u\n", i );
 		for ( int k = 0; k < size[ i ]; ++k )
 		{
-			printf("Current: %x, Next: %x, Key = %d, Value Length = %d, Value: %s\n",
+			printf("Current: %x,\t Next: %x,\t Key = %d,\t Value Length = %d, Value: %s\n",
 				temp, *(char**)temp, *(int*)(temp + PTRSIZE), *(int*)(temp + PTRSIZE + 4),
 				temp + PTRSIZE + 8);
-			if ( (i + 1) != size[ i ] )
+			if ( (k + 1) != size[ i ] )
 			{
 				temp = *(char**)temp;
 			}
